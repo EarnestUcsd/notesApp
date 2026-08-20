@@ -28,6 +28,11 @@ public class QuestionEntity {
     @Column(nullable = false, length = 1000)
     private String question;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private QuestionStatus status = QuestionStatus.PENDING;
+
     // Foreign key to User (creator and modifier)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
