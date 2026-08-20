@@ -4,7 +4,7 @@ import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 
 import java.util.Set;
@@ -36,7 +36,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdTime;
 
