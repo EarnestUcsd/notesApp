@@ -4,9 +4,8 @@ import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.springframework.data.annotation.CreatedBy;
 import java.util.UUID;
 import java.sql.Types;
 import java.time.Instant;
@@ -32,10 +31,9 @@ public class QuestionEntity {
     // Foreign key to User (creator and modifier)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
-    @CreatedBy
     private UserEntity createdBy;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdTime;
 
