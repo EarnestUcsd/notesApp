@@ -33,6 +33,9 @@ public class QuestionEntity {
     @Builder.Default
     private QuestionStatus status = QuestionStatus.PENDING;
 
+    @Column(columnDefinition = "text")
+    private String answer;
+
     // Foreign key to User (creator and modifier)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
@@ -41,5 +44,34 @@ public class QuestionEntity {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdTime;
+
+    public void markProcessing() {
+        requireStatus(QuestionStatus.PENDING);
+        status = QuestionStatus.PROCESSING;
+    }
+
+    public void markCompleted(String answer) {
+        if (answer == null || answer.isBlank()) {
+            throw new IllegalArgumentException("A completed question requires an answer");
+        }
+        requireStatus(QuestionStatus.PENDING, QuestionStatus.PROCESSING);
+        this.answer = answer;
+        status = QuestionStatus.COMPLETED;
+    }
+
+    public void markFailed() {
+        requireStatus(QuestionStatus.PENDING, QuestionStatus.PROCESSING);
+        status = QuestionStatus.FAILED;
+    }
+
+    private void requireStatus(QuestionStatus... allowed) {
+        for (QuestionStatus candidate : allowed) {
+            if (status == candidate) {
+                return;
+            }
+        }
+        throw new IllegalStateException(
+                "Question %s cannot transition from %s".formatted(id, status));
+    }
 
 }

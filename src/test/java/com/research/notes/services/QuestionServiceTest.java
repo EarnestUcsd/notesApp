@@ -66,6 +66,58 @@ class QuestionServiceTest {
     }
 
     @Test
+    void createLeavesAnswerUnset() {
+        UserEntity author = UserEntity.builder().id(UUID.randomUUID()).build();
+        when(userRepository.findById(author.getId())).thenReturn(Optional.of(author));
+        when(questionRepository.saveAndFlush(any(QuestionEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        assertThat(questionService.create(new CreateQuestionRequest("q", author.getId())).answer()).isNull();
+    }
+
+    @Test
+    void completeStoresAnswerAndStatus() {
+        QuestionEntity question = pendingQuestion();
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        when(questionRepository.saveAndFlush(question)).thenReturn(question);
+
+        QuestionResponse response = questionService.complete(question.getId(), "Rayleigh scattering");
+
+        assertThat(response.status()).isEqualTo(QuestionStatus.COMPLETED);
+        assertThat(response.answer()).isEqualTo("Rayleigh scattering");
+    }
+
+    @Test
+    void completeRejectsBlankAnswer() {
+        QuestionEntity question = pendingQuestion();
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+
+        assertThatThrownBy(() -> questionService.complete(question.getId(), " "))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(question.getStatus()).isEqualTo(QuestionStatus.PENDING);
+    }
+
+    @Test
+    void completedQuestionCannotTransitionAgain() {
+        QuestionEntity question = pendingQuestion();
+        question.markCompleted("done");
+
+        assertThatThrownBy(question::markProcessing).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(question::markFailed).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void failLeavesAnswerUnset() {
+        QuestionEntity question = pendingQuestion();
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        when(questionRepository.saveAndFlush(question)).thenReturn(question);
+
+        QuestionResponse response = questionService.fail(question.getId());
+
+        assertThat(response.status()).isEqualTo(QuestionStatus.FAILED);
+        assertThat(response.answer()).isNull();
+    }
+
+    @Test
     void createRejectsUnknownUser() {
         UUID unknown = UUID.randomUUID();
         when(userRepository.findById(unknown)).thenReturn(Optional.empty());
@@ -73,5 +125,13 @@ class QuestionServiceTest {
         assertThatThrownBy(() -> questionService.create(new CreateQuestionRequest("q", unknown)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
+    }
+
+    private QuestionEntity pendingQuestion() {
+        return QuestionEntity.builder()
+                .id(UUID.randomUUID())
+                .question("Why is the sky blue?")
+                .createdBy(UserEntity.builder().id(UUID.randomUUID()).build())
+                .build();
     }
 }
