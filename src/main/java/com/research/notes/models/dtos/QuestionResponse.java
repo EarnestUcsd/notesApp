@@ -10,6 +10,7 @@ public record QuestionResponse(
         UUID id,
         String question,
         QuestionStatus status,
+        String answer,
         UUID createdBy,
         Instant createdTime) {
 
@@ -18,6 +19,7 @@ public record QuestionResponse(
                 question.getId(),
                 question.getQuestion(),
                 question.getStatus(),
+                question.getAnswer(),
                 question.getCreatedBy().getId(),
                 question.getCreatedTime());
     }

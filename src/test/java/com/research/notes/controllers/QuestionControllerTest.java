@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.research.notes.models.entities.UserEntity;
 import com.research.notes.repositories.UserRepository;
+import com.research.notes.services.QuestionService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,6 +34,9 @@ class QuestionControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private QuestionService questionService;
 
     @Test
     void createdQuestionIsPendingAndStatusIsReturnedOnGet() throws Exception {
@@ -68,6 +72,31 @@ class QuestionControllerTest {
         mockMvc.perform(get("/v1/user/{userId}/questions", authorId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].status", is("PENDING")));
+    }
+
+    @Test
+    void completedQuestionReturnsAnswer() throws Exception {
+        UUID authorId = createUser().getId();
+
+        MvcResult created = mockMvc.perform(post("/v1/question")
+                .contentType("application/json")
+                .content("""
+                        {"question":"Why is the sky blue?","createdBy":"%s"}
+                        """.formatted(authorId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.answer").isEmpty())
+                .andReturn();
+
+        UUID id = UUID.fromString(
+                objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText());
+
+        questionService.markProcessing(id);
+        questionService.complete(id, "Rayleigh scattering");
+
+        mockMvc.perform(get("/v1/question/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("COMPLETED")))
+                .andExpect(jsonPath("$.answer", is("Rayleigh scattering")));
     }
 
     private UserEntity createUser() {

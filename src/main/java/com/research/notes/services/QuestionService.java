@@ -48,10 +48,37 @@ public class QuestionService {
         return PageResponse.from(questionRepository.findByCreatedById(userId, pageable).map(QuestionResponse::from));
     }
 
+    /**
+     * Internal lifecycle transitions; not reachable from the public API.
+     */
+    @Transactional
+    public QuestionResponse markProcessing(UUID id) {
+        QuestionEntity question = require(id);
+        question.markProcessing();
+        return QuestionResponse.from(questionRepository.saveAndFlush(question));
+    }
+
+    @Transactional
+    public QuestionResponse complete(UUID id, String answer) {
+        QuestionEntity question = require(id);
+        question.markCompleted(answer);
+        return QuestionResponse.from(questionRepository.saveAndFlush(question));
+    }
+
+    @Transactional
+    public QuestionResponse fail(UUID id) {
+        QuestionEntity question = require(id);
+        question.markFailed();
+        return QuestionResponse.from(questionRepository.saveAndFlush(question));
+    }
+
     @Transactional(readOnly = true)
     public QuestionResponse get(UUID id) {
+        return QuestionResponse.from(require(id));
+    }
+
+    private QuestionEntity require(UUID id) {
         return questionRepository.findById(id)
-                .map(QuestionResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Question %s not found".formatted(id)));
     }
