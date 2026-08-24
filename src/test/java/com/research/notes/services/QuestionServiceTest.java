@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.research.notes.models.dtos.CreateQuestionRequest;
@@ -21,6 +22,7 @@ import com.research.notes.models.dtos.QuestionResponse;
 import com.research.notes.models.entities.QuestionEntity;
 import com.research.notes.models.entities.QuestionStatus;
 import com.research.notes.models.entities.UserEntity;
+import com.research.notes.models.events.QuestionCreatedEvent;
 import com.research.notes.repositories.QuestionRepository;
 import com.research.notes.repositories.UserRepository;
 
@@ -32,6 +34,9 @@ class QuestionServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ApplicationEventPublisher events;
 
     @InjectMocks
     private QuestionService questionService;
@@ -49,6 +54,7 @@ class QuestionServiceTest {
         org.mockito.Mockito.verify(questionRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo(QuestionStatus.PENDING);
         assertThat(response.status()).isEqualTo(QuestionStatus.PENDING);
+        org.mockito.Mockito.verify(events).publishEvent(new QuestionCreatedEvent(response.id()));
     }
 
     @Test

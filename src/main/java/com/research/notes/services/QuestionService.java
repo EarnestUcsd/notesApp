@@ -2,6 +2,7 @@ package com.research.notes.services;
 
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import com.research.notes.models.dtos.PageResponse;
 import com.research.notes.models.dtos.QuestionResponse;
 import com.research.notes.models.entities.QuestionEntity;
 import com.research.notes.models.entities.UserEntity;
+import com.research.notes.models.events.QuestionCreatedEvent;
 import com.research.notes.repositories.QuestionRepository;
 import com.research.notes.repositories.UserRepository;
 
@@ -24,6 +26,7 @@ public class QuestionService {
 
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public QuestionResponse create(CreateQuestionRequest request) {
@@ -37,7 +40,9 @@ public class QuestionService {
                 .build();
 
         // flush so Hibernate populates the generated createdTime before mapping
-        return QuestionResponse.from(questionRepository.saveAndFlush(question));
+        QuestionResponse created = QuestionResponse.from(questionRepository.saveAndFlush(question));
+        events.publishEvent(new QuestionCreatedEvent(created.id()));
+        return created;
     }
 
     @Transactional(readOnly = true)
